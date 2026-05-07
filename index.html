@@ -704,13 +704,29 @@
         const saveApiKeyBtn = document.getElementById('save-apikey-btn');
         const apiKeyInput = document.getElementById('apikey-input');
 
-        function checkApiKey() {
+        function getApiConfig(type = 'text') {
+            const isCanvas = window.location.href.includes('usercontent.goog');
+            
+            let model = '';
+            if (type === 'text') {
+                model = isCanvas ? 'gemini-2.5-flash-preview-09-2025' : 'gemini-1.5-flash-latest';
+            } else if (type === 'image') {
+                model = 'gemini-2.5-flash-image-preview'; 
+            } else if (type === 'tts') {
+                model = 'gemini-2.5-flash-preview-tts';
+            }
+            
+            if (isCanvas) {
+                return { key: "", model: model };
+            }
+            
             const key = localStorage.getItem('gemini_api_key');
             if (!key) {
-                apiKeyModal.classList.add('visible');
+                const modal = document.getElementById('apikey-modal');
+                if (modal) modal.classList.add('visible');
                 return null;
             }
-            return key;
+            return { key: key, model: model };
         }
 
         btnSettings.addEventListener('click', () => {
@@ -956,6 +972,10 @@
             
             brollGenerateBtn.addEventListener('click', async () => {
                 if (brollProductImages.length === 0) return;
+                
+                const apiKey = checkApiKey();
+                if (!apiKey) return;
+
                 brollGenerateBtn.disabled = true;
                 brollGenerateBtn.innerHTML = `<div class="loader"></div><span class="ml-2">Menganalisa...</span>`;
                 brollGrid.innerHTML = `<div class="col-span-1 sm:col-span-2 xl:col-span-3 text-center py-10">
@@ -984,9 +1004,10 @@
             });
 
             async function analyzeAndGetPrompts() {
-                const apiKey = checkApiKey();
-                if (!apiKey) throw new Error("API Key belum diatur. Silakan klik ikon gear di pojok kanan atas.");
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const apiConfig = getApiConfig('text');
+                if (!apiConfig) throw new Error("API Key belum diatur.");
+                
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                 const orientation = document.querySelector('input[name="broll-orientation"]:checked').value;
                 
                 let systemPrompt = '';
@@ -1046,9 +1067,9 @@
 
                 for (let i = 0; i < retries; i++) {
                     try {
-                        const apiKey = checkApiKey();
-                        if (!apiKey) throw new Error("API Key belum diatur.");
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+                        const apiConfig = getApiConfig('image');
+                        if (!apiConfig) throw new Error("API Key belum diatur.");
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                         const orientation = document.querySelector('input[name="broll-orientation"]:checked').value;
                         
                         let finalPrompt = '';
@@ -1149,13 +1170,14 @@
             };
 
             brollGenerateDescBtn.addEventListener('click', async () => {
+                const apiConfig = getApiConfig('text');
+                if (!apiConfig) return;
+
                 const originalButtonText = brollGenerateDescBtn.innerHTML;
                 brollGenerateDescBtn.innerHTML = `<div class="loader !w-4 !h-4 !border-2"></div>`;
                 brollGenerateDescBtn.disabled = true;
                 try {
-                    const apiKey = checkApiKey();
-                    if (!apiKey) throw new Error("API Key belum diatur.");
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                     const systemPrompt = `You are a professional copywriter. Analyze the product in the image and write a concise, compelling, and SEO-friendly product description in Indonesian. Highlight its key features and potential benefits for customers. Keep it under 500 characters.`;
                     const parts = [ { text: "Buatkan deskripsi produk untuk gambar ini." }];
                     if (brollProductImages.length > 0) {
@@ -1181,14 +1203,15 @@
             });
 
             window.handleCaptionClick = async function(imageUrl, title) {
+                const apiConfig = getApiConfig('text');
+                if (!apiConfig) return;
+
                 showModal('✨ Caption Media Sosial', `<div class="flex flex-col items-center gap-4"><div class="loader"></div> <p class="text-gray-400">AI sedang meracik caption...</p></div>`);
                 try {
                     const parts = imageUrl.split(',');
                     const mimeType = parts[0].match(/:(.*?);/)[1];
                     const base64Data = parts[1];
-                    const apiKey = checkApiKey();
-                    if (!apiKey) throw new Error("API Key belum diatur.");
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                     const systemPrompt = `You are a creative social media manager. Based on the product photo, description, and theme, write an engaging Instagram caption in Indonesian. It should be appealing, concise, and end with 3-5 relevant hashtags.`;
                     const userQuery = `Product Description: "${brollProductDescInput.value.trim()}"\nPhoto Theme: "${title}"`;
                     const payload = {
@@ -1215,14 +1238,15 @@
             }
 
             window.handleVideoPromptClick = async function(imageUrl, title) {
+                const apiConfig = getApiConfig('text');
+                if (!apiConfig) return;
+
                 showModal('✨ Prompt Image-to-Video', `<div class="flex flex-col items-center gap-4"><div class="loader"></div> <p class="text-gray-400">AI sedang menganalisa gerakan...</p></div>`);
                 try {
                     const parts = imageUrl.split(',');
                     const mimeType = parts[0].match(/:(.*?);/)[1];
                     const base64Data = parts[1];
-                    const apiKey = checkApiKey();
-                    if (!apiKey) throw new Error("API Key belum diatur.");
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                     const systemPrompt = `You are an AI video generation expert. Based on the provided image, its theme, and the product description, generate a concise image-to-video prompt in English. The prompt must strictly follow the formula: "subject + what it's doing (action) + background + camera movement". Infer the most logical and visually appealing motion from the static image for the 'action' part, such as walking, turning, or posing on a catwalk. Then, add a suitable 'camera movement' to make the shot more cinematic (e.g., 'slow zoom in', 'panning from left to right', 'dolly shot forward'). Be creative and focus on creating a dynamic, cinematic shot suitable for a fashion showcase.`;
                     const userQuery = `Product Description: "${brollProductDescInput.value.trim()}"\nPhoto Theme: "${title}"`;
                     const payload = {
@@ -1325,6 +1349,10 @@
                 if (!posesUploadedFileAsDataUrl) { posesShowError("Silakan unggah gambar terlebih dahulu."); return; }
                 const selectedPoses = Array.from(posesPoseListContainer.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
                 if (selectedPoses.length === 0) { posesShowError("Pilih setidaknya satu pose."); return; }
+                
+                const apiConfig = getApiConfig('image');
+                if (!apiConfig) return;
+
                 posesPoseModal.classList.add('hidden');
                 posesSelectPoseBtn.disabled = true;
                 posesGenerateBtn.disabled = true;
@@ -1355,9 +1383,9 @@
                 posesSelectPoseBtn.disabled = false;
             }
             async function generatePosesImageWithNanoBanana(base64ImageData, mimeType, prompt) {
-                const apiKey = checkApiKey();
-                if (!apiKey) throw new Error("API Key belum diatur.");
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+                const apiConfig = getApiConfig('image');
+                if (!apiConfig) throw new Error("API Key belum diatur.");
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                 const payload = {
                     contents: [{
                         parts: [
@@ -1522,9 +1550,9 @@
             async function generateImageWithRetry(payload, retries = 3, delay = 1000) {
                for (let i = 0; i < retries; i++) {
                     try {
-                        const apiKey = checkApiKey();
-                        if (!apiKey) throw new Error("API Key belum diatur.");
-                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`;
+                        const apiConfig = getApiConfig('image');
+                        if (!apiConfig) throw new Error("API Key belum diatur.");
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         const responseText = await response.text();
                         if (!response.ok) {
@@ -1548,6 +1576,10 @@
             generateBtn.addEventListener('click', async () => {
                 validateInputs();
                 if (generateBtn.disabled) { showError("Unggah foto makanan dan pilih tema atau gambar referensi."); return; }
+                
+                const apiConfig = getApiConfig('image');
+                if (!apiConfig) return;
+
                 showLoading(true);
                 showError('');
                 resultContent.innerHTML = '';
@@ -1719,6 +1751,10 @@
                     });
                     previewButton.addEventListener('click', async (e) => {
                         e.stopPropagation();
+                        
+                        const apiConfig = getApiConfig('tts');
+                        if (!apiConfig) return;
+
                         if (currentPreviewAudio) { currentPreviewAudio.pause(); }
                         const originalIcon = previewButton.innerHTML;
                         previewButton.innerHTML = `<div class="preview-loader"></div>`;
@@ -1788,9 +1824,9 @@
                 return new Blob([wavBytes], { type: 'audio/wav' });
             }
             async function generateSpeech(text, voiceId, pitch, volume, retries = 3, delay = 1000) {
-                const apiKey = checkApiKey();
-                if (!apiKey) throw new Error("API Key belum diatur. Silakan klik ikon gear di kanan atas.");
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                const apiConfig = getApiConfig('tts');
+                if (!apiConfig) throw new Error("API Key belum diatur. Silakan klik ikon gear di kanan atas.");
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
                 const payload = {
                     model: "gemini-2.5-flash-preview-tts",
                     contents: [{ parts: [{ text: text }] }],
@@ -1821,6 +1857,10 @@
                 const mainText = textInput.value.trim(); const styleText = styleInput.value.trim();
                 if (!mainText) { showError('Mohon masukkan teks terlebih dahulu.'); return; }
                 if (mainText.length > CHAR_LIMIT) { showError(`Teks melebihi batas ${CHAR_LIMIT} karakter.`); return; }
+                
+                const apiConfig = getApiConfig('tts');
+                if (!apiConfig) return;
+
                 let finalText = mainText; if (styleText) { finalText = `${styleText}: ${mainText}`; }
                 setLoadingState(true);
                 try {
