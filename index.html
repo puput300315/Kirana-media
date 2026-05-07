@@ -709,7 +709,7 @@
             
             let model = '';
             if (type === 'text') {
-                model = isCanvas ? 'gemini-2.5-flash-preview-09-2025' : 'gemini-1.5-flash-latest';
+                model = isCanvas ? 'gemini-2.5-flash-preview-09-2025' : 'gemini-1.5-flash';
             } else if (type === 'image') {
                 model = 'gemini-2.5-flash-image-preview'; 
             } else if (type === 'tts') {
@@ -973,8 +973,8 @@
             brollGenerateBtn.addEventListener('click', async () => {
                 if (brollProductImages.length === 0) return;
                 
-                const apiKey = checkApiKey();
-                if (!apiKey) return;
+                const apiConfig = checkApiKey();
+                if (!apiConfig) return;
 
                 brollGenerateBtn.disabled = true;
                 brollGenerateBtn.innerHTML = `<div class="loader"></div><span class="ml-2">Menganalisa...</span>`;
@@ -995,7 +995,7 @@
                 } catch (error) {
                     console.error("Error during generation process:", error);
                     brollGrid.innerHTML = `<div class="col-span-1 sm:col-span-2 xl:col-span-3 text-center py-10 text-red-400">
-                        <p>Terjadi kesalahan saat menganalisis produk: ${error.message}</p>
+                        <p>Terjadi kesalahan: ${error.message}</p>
                     </div>`;
                 } finally {
                     brollGenerateBtn.disabled = false;
@@ -1195,7 +1195,7 @@
                     updateBrollButtonState();
                 } catch(error) {
                     console.error("Error generating description:", error);
-                    brollProductDescInput.value = "Gagal membuat deskripsi. Coba lagi.";
+                    brollProductDescInput.value = "Gagal: " + error.message;
                 } finally {
                     brollGenerateDescBtn.innerHTML = originalButtonText;
                     brollGenerateDescBtn.disabled = false;
@@ -1233,7 +1233,7 @@
                     });
                 } catch (error) {
                     console.error("Error generating caption:", error);
-                    showModal('Error', `<p class="text-red-400">Gagal membuat caption. Silakan coba lagi.</p>`);
+                    showModal('Error', `<p class="text-red-400">Gagal membuat caption: ${error.message}</p>`);
                 }
             }
 
@@ -1268,7 +1268,7 @@
                     });
                 } catch (error) {
                     console.error("Error generating video prompt:", error);
-                    showModal('Error', `<p class="text-red-400">Gagal membuat prompt video. Silakan coba lagi.</p>`);
+                    showModal('Error', `<p class="text-red-400">Gagal membuat prompt video: ${error.message}</p>`);
                 }
             }
         })();
